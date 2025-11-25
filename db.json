@@ -1,0 +1,11 @@
+{
+  "reservas": [
+    {
+      "id": "af2ef056-8d67-4b25-8f1c-08cc02e422c7",
+      "nombre": "Camila",
+      "fecha": "2025-11-20",
+      "hora": "20:00",
+      "personas": 3
+    }
+  ]
+}

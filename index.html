@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>InnovVentas - Tecnología Inteligente</title>
+    <meta name="description" content="InnovVentas: Tu tienda de tecnología con IA integrada. Descubre laptops, smartphones y accesorios de última generación con soporte 24/7." />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="imgs/icon.ico" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary-blue': '#2563eb',
+                        'secondary-blue': '#3b82f6',
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
+    <style>
+        #chat-widget {
+            position: fixed;
+            bottom: 90px;
+            right: 24px;
+            width: 360px;
+            max-width: 90vw;
+            height: 500px;
+            background-color: #fff;
+            border-radius: 1rem;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
+            transform-origin: bottom right;
+            z-index: 50;
+        }
+        .chat-hidden {
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+            pointer-events: none;
+        }
+        .chat-visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: all;
+        }
+        .chat-minimized {
+            height: 50px !important;
+            width: 300px !important;
+            transform: translateY(0) scale(1);
+            opacity: 1;
+        }
+        .chat-header {
+            background-color: #2563eb;
+            color: white;
+            padding: 0.75rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+        }
+        .chat-header button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 1.25rem;
+        }
+        #chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            background-color: #f9fafb;
+        }
+        #chat-input-container {
+            padding: 1rem;
+            background-color: white;
+            border-top: 1px solid #e5e7eb;
+        }
+        #chat-input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 9999px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        #chat-input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        #chat-send {
+            padding: 0.75rem;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        #chat-send:hover {
+            background-color: #1d4ed8;
+        }
+        .message-user {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 0.75rem;
+        }
+        .message-bot {
+            display: flex;
+            justify-content: flex-start;
+            margin-bottom: 0.75rem;
+        }
+        .message-bubble {
+            max-width: 80%;
+            padding: 0.75rem 1rem;
+            border-radius: 1rem;
+            line-height: 1.5;
+        }
+        .user-bubble {
+            background-color: #2563eb;
+            color: white;
+            border-bottom-right-radius: 0;
+        }
+        .bot-bubble {
+            background-color: #f3f4f6;
+            color: #1f2937;
+            border-bottom-left-radius: 0;
+        }
+        #chat-toggle-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background-color: #2563eb;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.75rem;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+            z-index: 60;
+        }
+        #chat-toggle-btn:hover {
+            transform: scale(1.1);
+            background-color: #1e40af;
+        }
+        #cart-modal {
+            transition: transform 0.3s ease-in-out;
+        }
+        .cart-open {
+            transform: translateX(0) !important;
+        }
+        .cart-closed {
+            transform: translateX(100%) !important;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800 antialiased relative">
+    <nav class="bg-white shadow-lg sticky top-0 z-40 border-b border-gray-100">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-microchip text-primary-blue text-3xl animate__animated animate__pulse animate__infinite"></i>
+                <span class="font-extrabold text-2xl text-gray-900 tracking-wider">InnovVentas</span>
+            </div>
+
+            <div class="hidden lg:flex items-center gap-8 text-gray-700">
+                <a href="#" class="hover:text-primary-blue font-semibold transition duration-300">Inicio</a>
+                <a href="#" class="hover:text-primary-blue font-semibold transition duration-300">Laptops</a>
+                <a href="#" class="hover:text-primary-blue font-semibold transition duration-300">Smartphones</a>
+                <a href="#" class="hover:text-primary-blue font-semibold transition duration-300">Accesorios</a>
+            </div>
+            <div class="flex items-center gap-5">
+                <a href="#" class="hidden sm:inline-flex items-center px-4 py-2 border border-primary-blue text-sm font-medium rounded-full text-primary-blue bg-white hover:bg-blue-50 transition duration-300">
+                    <i class="fa-solid fa-user-circle mr-2"></i> Crear Cuenta
+                </a>
+                <button onclick="toggleCartModal()" class="relative text-gray-600 hover:text-primary-blue transition">
+                    <i class="fa-solid fa-shopping-cart text-2xl"></i>
+                    <span id="cart-count" class="absolute -top-1 -right-1 bg-red-600 text-white w-5 h-5 text-xs font-bold rounded-full flex justify-center items-center ring-2 ring-white hidden">0</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+    <div id="cart-overlay" onclick="toggleCartModal()" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden transition-opacity duration-300"></div>
+
+    <div id="cart-modal" class="fixed top-0 right-0 h-full w-full sm:w-[400px] bg-white shadow-2xl z-50 transform translate-x-full flex flex-col transition-transform duration-300">
+        <div class="p-5 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
+            <h2 class="text-xl font-bold text-gray-800"><i class="fa-solid fa-bag-shopping mr-2 text-primary-blue"></i> Tu Carrito</h2>
+            <button onclick="toggleCartModal()" class="text-gray-500 hover:text-red-500 transition">
+                <i class="fa-solid fa-xmark text-2xl"></i>
+            </button>
+        </div>
+        <div id="cart-items-container" class="flex-1 overflow-y-auto p-5 space-y-4 scrollbar-hide">
+            <div class="text-center text-gray-500 mt-10">
+                <i class="fa-solid fa-basket-shopping text-4xl mb-3 opacity-30"></i>
+                <p>Tu carrito está vacío</p>
+            </div>
+        </div>
+        <div class="p-5 bg-gray-50 border-t border-gray-200">
+            <div class="flex justify-between items-center mb-4">
+                <span class="text-gray-600 font-medium">Total Estimado</span>
+                <span id="cart-total" class="text-2xl font-bold text-primary-blue">$0</span>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="clearCart()" class="px-4 py-3 border border-red-200 text-red-500 hover:bg-red-50 rounded-xl font-semibold transition text-sm">
+                    Vaciar
+                </button>
+                <button onclick="alert('¡Gracias por tu compra! Procesando pedido...')" class="px-4 py-3 bg-primary-blue text-white hover:bg-blue-700 rounded-xl font-bold shadow-lg transition text-sm">
+                    Pagar Ahora
+                </button>
+            </div>
+        </div>
+    </div>
+    <section class="max-w-7xl mx-auto px-6 py-20 bg-gradient-to-r from-gray-50 to-blue-50/70 rounded-b-3xl shadow-inner mb-12">
+        <div class="flex flex-col-reverse md:flex-row justify-between items-center gap-10">
+            <div class="max-w-2xl" data-aos="fade-right">
+                <p class="text-lg font-semibold text-primary-blue mb-2 uppercase tracking-widest">El futuro es ahora</p>
+                <h1 class="text-6xl font-extrabold text-gray-900 leading-tight md:text-7xl">
+                    Tecnología que<br>
+                    <span class="bg-clip-text text-transparent bg-gradient-to-r from-primary-blue to-secondary-blue">impulsa tu vida</span>
+                </h1>
+                <p class="mt-6 text-xl text-gray-600">
+                    Descubre dispositivos de última generación, rendimiento superior y el mejor soporte inteligente con nuestra IA 24/7.
+                </p>
+                <div class="flex gap-4 mt-10">
+                    <a href="#productos" class="px-8 py-3 bg-primary-blue hover:bg-blue-800 text-white rounded-full shadow-lg transition duration-300 transform hover:scale-105 font-bold flex items-center gap-3">
+                        <i class="fa-solid fa-bolt"></i> Explorar Ofertas
+                    </a>
+                    <button onclick="toggleChat()" class="px-8 py-3 bg-white border border-primary-blue text-primary-blue hover:bg-primary-blue hover:text-white rounded-full shadow-md transition duration-300 font-bold flex items-center gap-3">
+                        <i class="fa-regular fa-comments"></i> Consultar con IA
+                    </button>
+                </div>
+            </div>
+            <div data-aos="fade-left" class="flex-shrink-0 w-full md:w-1/2 lg:w-2/5">
+                <img src="imgs/destacado.jpg"
+                     alt="Producto tecnológico destacado"
+                     class="w-full h-auto object-cover rounded-3xl shadow-2xl transform rotate-3 hover:rotate-0 transition duration-500"
+                     onerror="this.onerror=null;this.src='https://placehold.co/600x400/1e40af/ffffff?text=Tech+Image';">
+            </div>
+        </div>
+    </section>
+    <section class="max-w-7xl mx-auto px-6 py-10 bg-white rounded-3xl shadow-xl mb-12" data-aos="fade-up">
+        <h2 class="text-3xl font-bold text-center text-gray-900 mb-8">Compra con Confianza, Garantía InnovVentas</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
+            <div class="p-6 bg-blue-50/50 rounded-2xl border border-blue-100">
+                <i class="fa-solid fa-truck-fast text-4xl text-primary-blue mb-3"></i>
+                <h3 class="font-bold text-xl text-gray-900 mb-1">Envío Express</h3>
+                <p class="text-gray-600 text-sm">Entrega en 24 a 48 horas en las principales ciudades.</p>
+            </div>
+            <div class="p-6 bg-blue-50/50 rounded-2xl border border-blue-100">
+                <i class="fa-solid fa-shield-halved text-4xl text-primary-blue mb-3"></i>
+                <h3 class="font-bold text-xl text-gray-900 mb-1">Garantía de 2 Años</h3>
+                <p class="text-gray-600 text-sm">Cobertura total contra defectos de fábrica.</p>
+            </div>
+            <div class="p-6 bg-blue-50/50 rounded-2xl border border-blue-100">
+                <i class="fa-solid fa-robot text-4xl text-primary-blue mb-3"></i>
+                <h3 class="font-bold text-xl text-gray-900 mb-1">Soporte Inteligente 24/7</h3>
+                <p class="text-gray-600 text-sm">Asistencia inmediata para tus dudas con nuestro chatbot.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="productos" class="py-20 bg-gray-100 mt-12">
+        <div class="max-w-7xl mx-auto px-6">
+            <h2 class="text-4xl font-bold text-gray-900 mb-12 text-center">Novedades y Más Vendidos</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+
+              <div data-aos="fade-up" class="bg-white p-6 rounded-3xl shadow-xl hover:shadow-2xl transition duration-300 flex flex-col">
+                    <div class="bg-gray-200 h-48 rounded-2xl flex items-center justify-center overflow-hidden">
+                        <img src="imgs/laptop.jpg" alt="Laptop Pro X1" class="w-full h-full object-cover">
+                    </div>
+                    <div class="mt-5 flex-grow">
+                        <p class="text-xl font-bold text-gray-900">Laptop Pro X1</p>
+                        <p class="text-gray-500 text-sm mb-2">16GB RAM, 512GB SSD</p>
+                        <div class="text-yellow-400 mb-3 text-lg"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-regular fa-star"></i></div>
+                    </div>
+                    <div class="flex justify-between items-center mt-4 pt-4 border-t border-gray-100">
+                        <p class="font-extrabold text-2xl text-primary-blue">$1200</p>
+                        <button onclick="addToCart('Laptop Pro X1', 1200, 'https://placehold.co/100x100/1e40af/ffffff?text=Laptop')" class="bg-primary-blue text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-blue-800 transition shadow-md active:scale-95">
+                            Comprar <i class="fa-solid fa-basket-shopping ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div data-aos="fade-up" data-aos-delay="150" class="bg-white p-6 rounded-3xl shadow-xl hover:shadow-2xl transition duration-300 flex flex-col">
+                    <div class="bg-gray-200 h-48 rounded-2xl flex items-center justify-center overflow-hidden">
+                        <img src="imgs/iphone15.jpg" alt="Phone 15 Pro Max" class="w-full h-full object-cover">
+                    </div>
+                    <div class="mt-5 flex-grow">
+                        <p class="text-xl font-bold text-gray-900">Phone 15 Pro Max</p>
+                        <p class="text-gray-500 text-sm mb-2">256GB, 5G</p>
+                        <div class="text-yellow-400 mb-3 text-lg"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star-half-stroke"></i></div>
+                    </div>
+                    <div class="flex justify-between items-center mt-4 pt-4 border-t border-gray-100">
+                        <p class="font-extrabold text-2xl text-primary-blue">$999</p>
+                        <button onclick="addToCart('Phone 15 Pro Max', 999, 'https://placehold.co/100x100/1e40af/ffffff?text=Phone')" class="bg-primary-blue text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-blue-800 transition shadow-md active:scale-95">
+                            Comprar <i class="fa-solid fa-basket-shopping ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div data-aos="fade-up" data-aos-delay="300" class="bg-white p-6 rounded-3xl shadow-xl hover:shadow-2xl transition duration-300 flex flex-col">
+                    <div class="bg-gray-200 h-48 rounded-2xl flex items-center justify-center overflow-hidden">
+                        <img src="imgs/teclado.jpg" alt="Teclado Mecánico RGB" class="w-full h-full object-cover">
+                    </div>
+                    <div class="mt-5 flex-grow">
+                        <p class="text-xl font-bold text-gray-900">Teclado Mecánico RGB</p>
+                        <p class="text-gray-500 text-sm mb-2">Switches táctiles</p>
+                        <div class="text-yellow-400 mb-3 text-lg"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i></div>
+                    </div>
+                    <div class="flex justify-between items-center mt-4 pt-4 border-t border-gray-100">
+                        <p class="font-extrabold text-2xl text-primary-blue">$79</p>
+                        <button onclick="addToCart('Teclado Mecánico RGB', 79, 'https://placehold.co/100x100/1e40af/ffffff?text=Teclado')" class="bg-primary-blue text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-blue-800 transition shadow-md active:scale-95">
+                            Comprar <i class="fa-solid fa-basket-shopping ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div data-aos="fade-up" data-aos-delay="450" class="bg-white p-6 rounded-3xl shadow-xl hover:shadow-2xl transition duration-300 flex flex-col">
+                    <div class="bg-gray-200 h-48 rounded-2xl flex items-center justify-center overflow-hidden">
+                        <img src="imgs/headset.jpg" alt="Headset Gamer Pro" class="w-full h-full object-cover">
+                    </div>
+                    <div class="mt-5 flex-grow">
+                        <p class="text-xl font-bold text-gray-900">Headset Gamer Pro</p>
+                        <p class="text-gray-500 text-sm mb-2">7.1 Surround</p>
+                        <div class="text-yellow-400 mb-3 text-lg"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star-half-stroke"></i></div>
+                    </div>
+                    <div class="flex justify-between items-center mt-4 pt-4 border-t border-gray-100">
+                        <p class="font-extrabold text-2xl text-primary-blue">$99</p>
+                        <button onclick="addToCart('Headset Gamer Pro', 99, 'https://placehold.co/100x100/1e40af/ffffff?text=Headset')" class="bg-primary-blue text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-blue-800 transition shadow-md active:scale-95">
+                            Comprar <i class="fa-solid fa-basket-shopping ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div data-aos="fade-up" data-aos-delay="600" class="bg-white p-6 rounded-3xl shadow-xl hover:shadow-2xl transition duration-300 flex flex-col">
+                    <div class="bg-gray-200 h-48 rounded-2xl flex items-center justify-center overflow-hidden">
+                        <img src="imgs/reloj.jpg" alt="Smartwatch X-Tech" class="w-full h-full object-cover">
+                    </div>
+                    <div class="mt-5 flex-grow">
+                        <p class="text-xl font-bold text-gray-900">Smartwatch X-Tech</p>
+                        <p class="text-gray-500 text-sm mb-2">Monitor cardíaco, GPS</p>
+                        <div class="text-yellow-400 mb-3 text-lg"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star-half-stroke"></i><i class="fa-regular fa-star"></i></div>
+                    </div>
+                    <div class="flex justify-between items-center mt-4 pt-4 border-t border-gray-100">
+                        <p class="font-extrabold text-2xl text-primary-blue">$150</p>
+                        <button onclick="addToCart('Smartwatch X-Tech', 150, 'https://placehold.co/100x100/1e40af/ffffff?text=Reloj')" class="bg-primary-blue text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-blue-800 transition shadow-md active:scale-95">
+                            Comprar <i class="fa-solid fa-basket-shopping ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div data-aos="fade-up" data-aos-delay="750" class="bg-white p-6 rounded-3xl shadow-xl hover:shadow-2xl transition duration-300 flex flex-col">
+                    <div class="bg-gray-200 h-48 rounded-2xl flex items-center justify-center overflow-hidden">
+                        <img src="imgs/camara.jpg" alt="WebCam Ultra 4K" class="w-full h-full object-cover">
+                    </div>
+                    <div class="mt-5 flex-grow">
+                        <p class="text-xl font-bold text-gray-900">WebCam Ultra 4K</p>
+                        <p class="text-gray-500 text-sm mb-2">HDR, Micrófonos duales</p>
+                        <div class="text-yellow-400 mb-3 text-lg"><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-solid fa-star"></i><i class="fa-regular fa-star"></i></div>
+                    </div>
+                    <div class="flex justify-between items-center mt-4 pt-4 border-t border-gray-100">
+                        <p class="font-extrabold text-2xl text-primary-blue">$59</p>
+                        <button onclick="addToCart('WebCam Ultra 4K', 59, 'https://placehold.co/100x100/1e40af/ffffff?text=Webcam')" class="bg-primary-blue text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-blue-800 transition shadow-md active:scale-95">
+                            Comprar <i class="fa-solid fa-basket-shopping ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-12">
+                <button class="px-8 py-3 bg-gray-900 hover:bg-gray-700 text-white rounded-full shadow-lg transition duration-300 font-bold">
+                    Ver Catálogo Completo <i class="fa-solid fa-arrow-right ml-2"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+    <footer class="bg-gray-900 text-gray-300 py-16 mt-12">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-10">
+                <div class="col-span-2">
+                    <h3 class="text-2xl font-extrabold mb-4 text-white">InnovVentas</h3>
+                    <p class="text-gray-400 max-w-sm">Tu socio en tecnología, brindando productos de vanguardia con soporte 24/7.</p>
+                </div>
+                <div>
+                    <h3 class="font-bold text-white mb-4 uppercase tracking-wider">Productos</h3>
+                    <ul class="space-y-3 text-sm">
+                        <li><a href="#" class="hover:text-primary-blue">Laptops</a></li>
+                        <li><a href="#" class="hover:text-primary-blue">Smartphones</a></li>
+                        <li><a href="#" class="hover:text-primary-blue">Accesorios</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-bold text-white mb-4 uppercase tracking-wider">Soporte</h3>
+                    <ul class="space-y-3 text-sm">
+                        <li><a href="#" class="hover:text-primary-blue">Centro de Ayuda</a></li>
+                        <li><a href="#" class="hover:text-primary-blue">Garantías</a></li>
+                        <li><a href="#" class="hover:text-primary-blue">Contacto</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-bold text-white mb-4 uppercase tracking-wider">Compañía</h3>
+                    <ul class="space-y-3 text-sm">
+                        <li><a href="#" class="hover:text-primary-blue">Acerca de</a></li>
+                        <li><a href="#" class="hover:text-primary-blue">Trabajo</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-10 pt-6 text-center text-gray-500 text-sm">
+                <p>© 2025 InnovVentas impulsado con el poder de los pibes :p</p>
+            </div>
+        </div>
+    </footer>
+
+
+    <div id="chat-widget" class="chat-hidden">
+        <div class="chat-header">
+            <span class="chat-title"><i class="fa-solid fa-headset mr-2"></i> Asistente InnovVentas</span>
+            <div class="flex gap-3">
+                <button id="minimize-btn"><i class="fa-solid fa-minus"></i></button>
+                <button id="close-btn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+        </div>
+        <div id="chat-messages" class="flex-1 p-4 overflow-y-auto scrollbar-hide bg-gray-50"></div>
+        <div id="chat-input-container" class="p-3 border-t border-gray-200 bg-white">
+            <div class="flex gap-2">
+                <input id="chat-input" type="text" placeholder="Escribe tu mensaje..."
+                       class="flex-1 px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-primary-blue focus:border-transparent">
+                <button id="chat-send" class="bg-primary-blue text-white px-4 py-2 rounded-full hover:bg-blue-700 transition">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    <button onclick="toggleChat()" id="chat-toggle-btn">
+        <i id="chat-icon" class="fa-regular fa-comments"></i>
+    </button>
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({
+            duration: 800,
+            once: true,
+        });
+
+
+        const chatWidget = document.getElementById("chat-widget");
+        const minimizeBtn = document.getElementById("minimize-btn");
+        const closeBtn = document.getElementById("close-btn");
+        const chatMessages = document.getElementById("chat-messages");
+        const chatInput = document.getElementById("chat-input");
+        const chatSend = document.getElementById("chat-send");
+
+        function toggleChat() {
+            const isHidden = chatWidget.classList.contains("chat-hidden");
+            if (isHidden) {
+                chatWidget.classList.remove("chat-hidden");
+                chatWidget.classList.add("chat-visible");
+                chatWidget.classList.remove("chat-minimized");
+            } else {
+                chatWidget.classList.add("chat-hidden");
+                chatWidget.classList.remove("chat-visible");
+            }
+        }
+
+        minimizeBtn.addEventListener("click", () => {
+            chatWidget.classList.toggle("chat-minimized");
+        });
+
+        closeBtn.addEventListener("click", () => {
+            toggleChat();
+        });
+
+        function addMessage(sender, message) {
+            const messageDiv = document.createElement("div");
+            messageDiv.className = `mb-3 flex ${sender === "user" ? "justify-end" : "justify-start"}`;
+            messageDiv.innerHTML = `
+                <div class="max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${sender === "user" ? "bg-primary-blue text-white user-bubble" : "bg-gray-200 text-gray-800 bot-bubble"}">
+                    ${message}
+                </div>
+            `;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const message = chatInput.value.trim();
+            if (!message) return;
+
+            addMessage("user", message);
+            chatInput.value = "";
+
+            try {
+                const response = await fetch("http://localhost:3000/chat", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ message }),
+                });
+
+                if (!response.ok) {
+                    throw new Error("Error al enviar el mensaje");
+                }
+
+                const data = await response.json();
+                addMessage("bot", data.respuesta);
+            } catch (error) {
+                console.error("Error:", error);
+                addMessage("bot", "Lo siento, hubo un error al procesar tu mensaje. Intenta nuevamente.");
+            }
+        }
+
+        chatSend.addEventListener("click", sendMessage);
+        chatInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+                sendMessage();
+            }
+        });
+
+
+        let cart = JSON.parse(localStorage.getItem('innovventas_cart')) || [];
+        const cartModal = document.getElementById('cart-modal');
+        const cartOverlay = document.getElementById('cart-overlay');
+        const cartItemsContainer = document.getElementById('cart-items-container');
+        const cartTotalElement = document.getElementById('cart-total');
+        const cartCountBadge = document.getElementById('cart-count');
+
+        function saveCart() {
+            localStorage.setItem('innovventas_cart', JSON.stringify(cart));
+            updateCartUI();
+        }
+
+        function addToCart(name, price, image) {
+            const newItem = {
+                id: Date.now(),
+                name: name,
+                price: price,
+                image: image
+            };
+            cart.push(newItem);
+            saveCart();
+            if(cartModal.classList.contains('translate-x-full')) {
+                toggleCartModal();
+            }
+        }
+
+        function removeFromCart(itemId) {
+            cart = cart.filter(item => item.id !== itemId);
+            saveCart();
+        }
+
+        function clearCart() {
+            if(confirm('¿Estás seguro de que quieres vaciar el carrito?')) {
+                cart = [];
+                saveCart();
+            }
+        }
+
+        function toggleCartModal() {
+            cartModal.classList.toggle('translate-x-full');
+            cartOverlay.classList.toggle('hidden');
+        }
+
+        function updateCartUI() {
+            if (cart.length > 0) {
+                cartCountBadge.classList.remove('hidden');
+                cartCountBadge.innerText = cart.length;
+            } else {
+                cartCountBadge.classList.add('hidden');
+            }
+            const total = cart.reduce((acc, item) => acc + item.price, 0);
+            cartTotalElement.innerText = `$${total.toFixed(2)}`;
+            cartItemsContainer.innerHTML = '';
+            if (cart.length === 0) {
+                cartItemsContainer.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full text-gray-400">
+                        <i class="fa-solid fa-cart-arrow-down text-5xl mb-4 text-gray-300"></i>
+                        <p class="font-medium">Tu carrito está vacío</p>
+                        <p class="text-sm mt-2">¡Explora nuestras ofertas!</p>
+                    </div>
+                `;
+                return;
+            }
+            cart.forEach(item => {
+                const itemElement = document.createElement('div');
+                itemElement.className = "flex items-center gap-4 bg-white p-3 rounded-xl border border-gray-100 shadow-sm animate__animated animate__fadeIn";
+                itemElement.innerHTML = `
+                    <div class="w-16 h-16 bg-gray-100 rounded-lg flex-shrink-0 overflow-hidden">
+                        <img src="${item.image}" alt="${item.name}" class="w-full h-full object-cover">
+                    </div>
+                    <div class="flex-grow">
+                        <h4 class="font-bold text-gray-800 text-sm">${item.name}</h4>
+                        <p class="text-primary-blue font-bold text-sm">$${item.price}</p>
+                    </div>
+                    <button onclick="removeFromCart(${item.id})" class="text-gray-400 hover:text-red-500 transition p-2">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                `;
+                cartItemsContainer.appendChild(itemElement);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', updateCartUI);
+    </script>
+</body>
+</html>
